@@ -3,6 +3,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import *
 from selenium.webdriver.common.keys import Keys
+import json
+
+import os
+import sys
+
 import traceback
 import logging
 from Global.Driver import Driver
@@ -12,12 +17,18 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 
+# tkinter
+import tkinter as tk
+from tkinter import messagebox
+
 
 class TestBot:
 
     def __init__(self):
-        self.driver = Driver.initialize_driver()
         pass
+
+    def initializeDriver(self):
+        self.driver = Driver.initialize_driver()
 
     def closeDriver(self):
         self.driver.close()
@@ -25,7 +36,7 @@ class TestBot:
     def launch(self, url):
         try:
             self.driver.get(url)
-            self.driver.set_page_load_timeout(30)
+            self.driver.set_page_load_timeout(120)
             self.driver.maximize_window()
             # self.driver.implicitly_wait(10)
         except Exception as e:
@@ -35,7 +46,7 @@ class TestBot:
         try:
             wait = WebDriverWait(self.driver, timeout, poll_frequency=1,
                                  ignored_exceptions=[ElementNotVisibleException, ElementNotSelectableException])
-            element = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
             logging.info(elementName + " is visible in the screen")
         except Exception as e:
             raise Exception("Unable to wait for the " + elementName, e)
@@ -45,11 +56,11 @@ class TestBot:
             oUsername = "//*[@name='username']"
             oPassword = "//*[@name='password']"
             oLoginBtn = "//button[@type='submit']"
-            self.fluentWait(oUsername, "Username", 10)
+            self.fluentWait(oUsername, "Username", 60)
             self.driver.find_element(By.XPATH, oUsername).send_keys(username)
-            self.fluentWait(oPassword, "Password", 10)
+            self.fluentWait(oPassword, "Password", 60)
             self.driver.find_element(By.XPATH, oPassword).send_keys(password)
-            self.fluentWait(oLoginBtn, "Login Button", 10)
+            self.fluentWait(oLoginBtn, "Login Button", 60)
             self.driver.find_element(By.XPATH, oLoginBtn).click()
         except Exception as e:
             raise Exception("Unable to login into the System ", e)
@@ -60,19 +71,20 @@ class TestBot:
             oActiveMenu = "//*[contains(@class,'navbar')]//a[contains(@class,'active')]//span[text()='{menu}']".format(
                 menu=menuName)
             oSearchbar = "//div[contains(@class,'main-menu')]//*[@placeholder='Search']"
-            self.fluentWait(oSearchbar, "Searchbar", 10)
+            self.fluentWait(oSearchbar, "Searchbar", 60)
             self.driver.find_element(By.XPATH, oSearchbar).send_keys(menuName)
-            self.fluentWait(oNavigator, menuName, 10)
+            self.fluentWait(oNavigator, menuName, 60)
             self.driver.find_element(By.XPATH, oNavigator).click()
             try:
-                self.fluentWait(oActiveMenu, "selected " + menuName, 10)
+                self.fluentWait(oActiveMenu, "selected " + menuName, 60)
                 logging.info(menuName + " menu is selected successfully")
             except TimeoutException as e:
                 logging.error(menuName + " menu can't be selected. Something went Wrong!!!")
         except Exception as e:
             raise Exception("Unable to navigate to " + menuName + " page", e)
 
-    def readExcel(self):
+    def readExcel(self, sheetPath):
+
         SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
         SERVICE_ACCOUNT_FILE = 'key.json'
         credentials = None
@@ -80,7 +92,9 @@ class TestBot:
             SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 
         # The ID and range of a sample spreadsheet.
-        SAMPLE_SPREADSHEET_ID = '199TtxUfqbgwrPfzfzvsC3zxwsn_TUJjW3Ahlh2LOH7Y'
+        sheetPath = sheetPath.split("/d/")[1].split("/edit")[0]
+        # SAMPLE_SPREADSHEET_ID = '199TtxUfqbgwrPfzfzvsC3zxwsn_TUJjW3Ahlh2LOH7Y'
+        SAMPLE_SPREADSHEET_ID = sheetPath
         SAMPLE_RANGE_NAME = 'Sheet1!A2:J1000'
 
         try:
@@ -160,51 +174,94 @@ class TestBot:
                     else:
                         raise Exception("Name is invalid Please enter the full name of the candidate " + row[0])
                     self.navigate("Recruitment")
-                    self.fluentWait(oAddBtn, "Add Button", 10)
+                    self.fluentWait(oAddBtn, "Add Button", 60)
                     self.driver.find_element(By.XPATH, oAddBtn).click()
-                    self.fluentWait(oFirstName, "First Name", 10)
+                    self.fluentWait(oFirstName, "First Name", 60)
                     self.driver.find_element(By.XPATH, oFirstName).send_keys(oFname)
-                    self.fluentWait(oMiddleName, "Middle Name", 10)
+                    self.fluentWait(oMiddleName, "Middle Name", 60)
                     self.driver.find_element(By.XPATH, oMiddleName).send_keys(oMname)
-                    self.fluentWait(oLastName, "Last Name", 10)
+                    self.fluentWait(oLastName, "Last Name", 60)
                     self.driver.find_element(By.XPATH, oLastName).send_keys(oLname)
-                    self.fluentWait(oVacancy, "Vacancy", 10)
+                    self.fluentWait(oVacancy, "Vacancy", 60)
                     self.driver.find_element(By.XPATH, oVacancy).click()
+                    self.fluentWait(oVacancyName.format(postName=row[1]), row[1], 60)
                     self.driver.find_element(By.XPATH, oVacancyName.format(postName=row[1])).click()
-                    self.fluentWait(oEmail, "Email", 10)
+                    self.fluentWait(oEmail, "Email", 60)
                     self.driver.find_element(By.XPATH, oEmail).send_keys(row[2])
-                    self.fluentWait(oContactNumber, "Contact Number", 10)
+                    self.fluentWait(oContactNumber, "Contact Number", 60)
                     self.driver.find_element(By.XPATH, oContactNumber).send_keys(row[4])
                     # self.fluentWait(oResume, "Resume", 10)
                     # self.driver.find_element(By.XPATH, oResume).send_keys("/Users/monilshah/PycharmProjects/automationBots/testBot/geckodriver.log")
-                    self.fluentWait(oKeywords, "Keywords", 10)
+                    self.fluentWait(oKeywords, "Keywords", 60)
                     self.driver.find_element(By.XPATH, oKeywords).send_keys(row[5])
-                    self.fluentWait(oDateofApplication, "Date of Application", 10)
+                    self.fluentWait(oDateofApplication, "Date of Application", 60)
                     self.driver.find_element(By.XPATH, oDateofApplication).send_keys(
                         Keys.COMMAND + "A" + Keys.BACKSPACE)
                     self.driver.find_element(By.XPATH, oDateofApplication).send_keys(row[6])
-                    self.fluentWait(oNotes, "Notes", 10)
+                    self.fluentWait(oNotes, "Notes", 60)
                     self.driver.find_element(By.XPATH, oNotes).send_keys(row[7])
-                    self.fluentWait(oConsentCheckbox, "Consent Checkbox", 10)
+                    self.fluentWait(oConsentCheckbox, "Consent Checkbox", 60)
                     self.driver.find_element(By.XPATH, oConsentCheckbox).click()
-                    self.fluentWait(oSave, "Save", 10)
+                    self.fluentWait(oSave, "Save", 60)
                     self.driver.find_element(By.XPATH, oSave).click()
-                    self.fluentWait(oSuccess, "Success", 10)
+                    self.fluentWait(oSuccess, "Success", 60)
                     self.updateFlag(index, "Yes", "Success")
                     logging.warning(row[0] + " candidate is added successfully in to the System.")
-                    self.fluentWait(oApplicationStage, "Application Stage", 15)
+                    self.fluentWait(oApplicationStage, "Application Stage", 60)
                 else:
                     logging.error(row[0] + " is already added in to the System.")
 
         except Exception as e:
-            self.updateFlag(index, "Yes", e)
-            raise Exception("Unable to add the candidate.", e)
+            self.updateFlag(index, "No", str(e))
+            logging.error("Unable to add the candidate " + row[0], e.message)
+
+
+# tkinter Starts from here
+
+with open("example.json", "r") as f:
+    credentials = json.load(f)
+    username = credentials["username"]
+    password = credentials["password"]
 
 
 try:
-    test = TestBot()
-    test.launch("https://opensource-demo.orangehrmlive.com")
-    test.login(username="Admin", password="admin123")
-    test.addCandidate(test.readExcel())
+
+    root = tk.Tk()
+    root.title("Technopreneurs Technolabs")
+    canvas1 = tk.Canvas(root, width=400, height=300)
+    canvas1.pack()
+    label1 = tk.Label(root, text="Enter Google Sheet URL: ")
+    label2 = ""
+    entry1 = tk.Entry(root)
+    entry1.insert(0, 'https://docs.google.com/spreadsheets/d/199TtxUfqbgwrPfzfzvsC3zxwsn_TUJjW3Ahlh2LOH7Y/edit#gid=0')
+
+
+    def triggerBot():
+        sheetPath = entry1.get()
+        if len(sheetPath) == 0:
+            messagebox.showerror("Error", "Please enter Valid Google Sheet URL.")
+            return
+        # messagebox.showinfo("Information", "Bot has been triggered successfully.")
+        test = TestBot()
+        test.initializeDriver()
+        test.launch("https://opensource-demo.orangehrmlive.com")
+        test.login(username=username, password=password)
+        try:
+            test.addCandidate(test.readExcel(sheetPath))
+        except Exception as e:
+            logging.error("Something went wrong while adding the employee!!")
+        pass
+
+
+    canvas1.create_window(200, 100, window=label1)
+    canvas1.create_window(200, 140, window=entry1)
+    button1 = tk.Button(text='Trigger the bot', command=triggerBot)
+    canvas1.create_window(200, 180, window=button1)
+
+    root.mainloop()
+
 except Exception as e:
     raise Exception("Something went wrong!!!! ", e)
+
+
+# pyi-makespec testBot\TestBot.py --onefile --noconsole --add-binary "WebDrivers\geckodriver;WebDrivers\" --add-data "testBot\example.json;." --add-data "testBot\example.ini;." --name selenium-automation-exe
