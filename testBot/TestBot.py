@@ -13,6 +13,7 @@ import logging
 from Global.Driver import Driver
 
 # Google Sheet API
+# pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
